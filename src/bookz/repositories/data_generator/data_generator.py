@@ -1,5 +1,6 @@
 import faker
-from ...services.dto_models import NewAuthorDTO as Author, BookDTO as Book, CustomerDTO as Customer
+from ..orm_models import Author, Book, Customer
+
 
 fake_gen = faker.Faker("uk_UA")
 male_patronymic_suffixes = ['ович', 'евич', 'ич', 'ійович', 'йович', 'ов', 'ев', 'ій']
@@ -18,9 +19,10 @@ def generate_fake_authors(quantity: int) -> list[Author]:
         else:
             last_name = fake_gen.last_name_female()
             first_name = fake_gen.first_name_female()
-            middle_name = fake_gen.first_name_female() + fake_gen.random_element(
+            middle_name = fake_gen.first_name_male() + fake_gen.random_element(
                 female_patronymic_suffixes) if fake_gen.boolean(chance_of_getting_true=70) else None
-        fake_authors.append(Author(first_name=first_name, last_name=last_name, middle_name=middle_name))
+        author = Author(first_name=first_name, last_name=last_name, middle_name=middle_name)
+        fake_authors.append(author)
     return fake_authors
 
 
@@ -58,8 +60,8 @@ def generate_fake_customers(quantity: int) -> list[Customer]:
                 female_patronymic_suffixes) if fake_gen.boolean(chance_of_getting_true=70) else None
         email = fake_gen.unique.email()
         phone = fake_gen.unique.phone_number()
-        fake_customers.append(Customer(last_name=last_name, first_name=first_name, email=email, phone=phone,
-                                       middle_name=middle_name))
+        fake_customers.append(Customer(first_name=first_name, last_name=last_name, middle_name=middle_name,
+                                       email=email, phone=phone))
     return fake_customers
 
 

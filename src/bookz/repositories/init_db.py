@@ -1,20 +1,20 @@
 import os
 import random
 import string
-from sqlalchemy import select
+from sqlalchemy import select, update
 from .orm_models import *
 from ..enums.enums import BookStatus, BookStatement, PlacementStatus
 from ..services.dto_models import NewDepositoryDTO
-from ..db import reset_db, get_session
-from data_generator.data_generator import *
+from ..db import reset_db, get_context_session
+from .data_generator.data_generator import *
+from ..mappers.mappers import *
 
 def init_db(depo: NewDepositoryDTO) -> None:
 
     reset_db()
-    session = get_session()
 
     # Insert fake data in DB
-    with (session):
+    with (get_context_session() as session):
         # Create placement
         line_ids = list(string.ascii_uppercase[:depo.lines])
         shelf_ids = list(string.ascii_uppercase[:depo.shelves])
@@ -45,24 +45,26 @@ def init_db(depo: NewDepositoryDTO) -> None:
         for customer in customers:
             session.add(customer)
 
+        session.flush()
+
         # Create book-author relations
-        author_ids = session.scalar(select(Author.id)).all()
-        book_ids = session.scalar(select(Book.id)).all()
+        author_ids = session.scalars(select(Author.id)).all()
+        book_ids = session.scalars(select(Book.id)).all()
         for book_id in book_ids:
             num_of_authors = random.randint(0, 3)
             if not num_of_authors:
-                break
+                continue
             selected_authors = random.sample(author_ids, num_of_authors)
             for author_id in selected_authors:
                 session.add(BookAuthor(
-                    book_id=book_id[0],
-                    author_id=author_id[0]
+                    book_id=book_id,
+                    author_id=author_id
                 ))
 
         # Create book copies
-        book_ids = session.scalar(select(Book.id)).all()
-        placements = session.scalar(select(Placement.id).where(Placement.status == PlacementStatus.FREE)).all()
-        customers = session.scalar(select(Customer.customer_id)).all
+        book_ids = session.scalars(select(Book.id)).all()
+        placements = session.scalars(select(Placement.id).where(Placement.status == PlacementStatus.FREE)).all()
+        customers = session.scalars(select(Customer.customer_id)).all()
         for book_id in book_ids:
             num_of_copies = random.randint(1, depo.max_books_copies_per_book)
             for copy in range(num_of_copies): #type: ignore
@@ -72,22 +74,29 @@ def init_db(depo: NewDepositoryDTO) -> None:
                                             BookStatement.REPAIR, BookStatement.DAMAGED],
                                             weights=(20, 50, 20, 10))[0]
                 if status == BookStatus.AVAILABLE:
+                    placement = placements.pop(random.randint(0, len(placements) - 1))
                     session.add(BookCopy(
-                        book_id=book_id[0],
+                        book_id=book_id,
                         status=status,
                         statement=statement,
-                        placement=placements.pop(random.randint(0, len(placements) - 1))[0]
+                        placement=placement
                     ))
+                    stmt = (
+                        update(Placement)
+                        .values(status=PlacementStatus.OCCUPIED)
+                        .where(Placement.id == placement)
+                    )
+                    session.execute(stmt)
                 elif status == BookStatus.LANDED:
                     session.add(BookCopy(
-                        book_id=book_id[0],
+                        book_id=book_id,
                         status=status,
                         statement=statement,
-                        customer_id=random.choice(customers)[0]
+                        customer_id=random.choice(customers)
                     ))
                 else:
                     session.add(BookCopy(
-                        book_id=book_id[0],
+                        book_id=book_id,
                         status=status,
                         statement=statement
                     ))

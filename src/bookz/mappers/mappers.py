@@ -1,4 +1,5 @@
-from ..repositories.orm_models import Author, Book, Customer
+import copy as c
+from ..repositories.orm_models import Author, Book, Customer, BookCopy
 from ..enums import *
 from ..services.dto_models import *
 
@@ -27,7 +28,13 @@ class AuthorMapper:
 
     @staticmethod
     def orm_to_dto(author: Author) -> AuthorDTO:
-        return AuthorDTO.model_validate(author)
+        tmp = c.deepcopy(author)
+        tmp.full_name = FullNameDTO(
+            first_name=tmp.first_name,
+            last_name=tmp.last_name,
+            middle_name=tmp.middle_name
+        )
+        return AuthorDTO.model_validate(tmp, from_attributes=True, context={"exclude": {"books"}})
 
 
 class BookMapper:
@@ -39,14 +46,44 @@ class BookMapper:
                 if k in book_columns}
 
     @staticmethod
-    def orm_to_dto(book: Book) -> BookDTO:
-        return BookDTO.model_validate(book)
+    def new_dto_to_dict(book: NewBookDTO) -> dict:
+        book_columns = Book.__table__.columns.keys()
+        return {k: v for k, v in book.model_dump(exclude_unset=True).items()
+                if k in book_columns}
 
+
+    @staticmethod
+    def orm_to_dto(book: Book) -> BookDTO:
+        return BookDTO.model_validate(book, from_attributes=True, context={"exclude": {"authors"}})
+
+# TODO
+class BookCopyMapper:
+
+    @staticmethod
+    def dto_to_dict(book: BookCopyDTO) -> dict:
+        pass
+
+    @staticmethod
+    def new_dto_to_dict(book: NewBookCopyDTO) -> dict:
+        pass
+
+    @staticmethod
+    def orm_to_dto(book: BookCopy) -> BookCopyDTO:
+        pass
 
 class CustomMapper:
 
     @staticmethod
     def dto_to_dict(customer:CustomerDTO) -> dict:
+        customer_columns = Customer.__table__.columns.keys()
+        customer_dict = customer.model_dump(exclude_unset=True)
+        full_name = customer_dict.pop('full_name',{})
+        customer_dict.update(full_name)
+        return {k: v for k, v in customer_dict.items()
+                if k in customer_columns}
+
+    @staticmethod
+    def new_dto_to_dict(customer:NewCustomerDTO) -> dict:
         customer_columns = Customer.__table__.columns.keys()
         customer_dict = customer.model_dump(exclude_unset=True)
         full_name = customer_dict.pop('full_name',{})

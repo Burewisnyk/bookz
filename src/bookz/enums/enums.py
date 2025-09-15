@@ -3,9 +3,10 @@ from enum import Enum
 
 class BookStatus(Enum):
     AVAILABLE = "available"
-    LANDED = "landed"
+    BORROWED = "borrowed"
     RESERVED = "reserved"
     LOST = "lost"
+    DECOMMISSIONED = "decommissioned"
     UNKNOWN = "unknown"
 
 

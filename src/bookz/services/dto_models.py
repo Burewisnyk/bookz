@@ -12,7 +12,6 @@ class AuthorDTO(BaseModel):
 
 class NewAuthorDTO(BaseModel):
     full_name: FullNameDTO = Field(...)
-    books: list['BookDTO'] | None = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,6 +33,13 @@ class BookCopyDTO(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class NewBookCopyDTO(BaseModel):
+    book_id: int = Field(..., ge=0)
+    status: BookStatus = Field(BookStatus.UNKNOWN)
+    statement: BookStatement = Field(BookStatement.NEW)
+    placement: int | None = Field(None)
+
+    model_config = ConfigDict(from_attributes=True)
 
 class BookDTO(BaseModel):
     title: str = Field(..., min_length=1, max_length=120)
@@ -58,8 +64,9 @@ class NewBookDTO(BaseModel):
     isbn: str | None = Field(None,min_length=10, max_length=20)
     pages: int | None = Field(None, ge=1)
     price: float | None = Field(None, ge=0)
-    authors: list[AuthorDTO] | None = Field(None)
+    authors: list[NewAuthorDTO] | None = Field(None)
     new_copies: int = Field(..., ge=1)
+    copy_statement: BookStatement = Field(BookStatement.NEW)
 
 
 class CustomerDTO(BaseModel):

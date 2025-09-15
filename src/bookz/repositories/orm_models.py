@@ -3,16 +3,13 @@ from sqlalchemy import TIMESTAMP, Integer, SmallInteger, Float, String, ForeignK
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from ..enums.enums import BookStatus, BookStatement, PlacementStatus
-
-
-class Base(DeclarativeBase):
-    pass
+from ..db import Base
 
 
 class TimestampMixin:
     created_at: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, nullable=False, server_default=func.current_timestamp())
     updated_at: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, nullable=False, server_default=func.current_timestamp(),
-                                                   onupdate=func.current_timestamp)
+                                                   onupdate=func.current_timestamp())
 
 
 class Author(Base, TimestampMixin):
@@ -74,12 +71,13 @@ class BookCopy(Base, TimestampMixin):
     book_id: Mapped[int] = mapped_column(ForeignKey('books.id'), nullable=False)
     status: Mapped[BookStatus] = mapped_column(PgEnum(BookStatus, name="book_copy_status"), nullable=False,
                                                default=BookStatus.AVAILABLE)
-    placement : Mapped[str | None] = mapped_column(ForeignKey('placements.id'), default=None)
+    placement_id : Mapped[int | None] = mapped_column(ForeignKey('placements.id'), default=None)
     statement: Mapped[BookStatement] = mapped_column(PgEnum(BookStatement), nullable=False, default=BookStatement.NEW)
     customer_id: Mapped[int | None] = mapped_column(ForeignKey('customers.customer_id'), default=None)
 
     book: Mapped[Book] = relationship("Book", back_populates='copies')
     customer: Mapped[Customer] = relationship("Customer", back_populates='borrowed_books')
+    placement: Mapped[Placement] = relationship("Placement", back_populates='book_copy')
 
     def __repr__(self) -> str:
         return (f"BookCopy(id={self.id}, book={self.book}, status='{self.status.value}', "
@@ -117,9 +115,10 @@ class Placement(Base, TimestampMixin):
     column_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     shelf_id: Mapped[str] = mapped_column(String(1), nullable=False)
     position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    book_copy: Mapped[int | None] = mapped_column(ForeignKey('book_copies.id'))
     status: Mapped[PlacementStatus] = mapped_column(PgEnum(PlacementStatus, name="placement_status"), nullable=False,
                                                     default=PlacementStatus.FREE)
+
+    book_copy = relationship("BookCopy", back_populates="placement")
 
     def __repr__(self) -> str:
         return (f"Placement(id={self.id}, line_id='{self.line_id}', column_id={self.column_id}, "

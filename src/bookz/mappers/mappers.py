@@ -1,7 +1,8 @@
 import copy as c
+import string
 from ..repositories.orm_models import Author, Book, Customer, BookCopy
-from ..enums import *
 from ..services.dto_models import *
+
 
 
 
@@ -24,7 +25,6 @@ class AuthorMapper:
         author_dict.update(full_name)
         return {k: v for k, v in author.model_dump(exclude_unset=True).items()
                 if k in author_columns}
-
 
     @staticmethod
     def orm_to_dto(author: Author) -> AuthorDTO:
@@ -71,7 +71,7 @@ class BookCopyMapper:
     def orm_to_dto(book: BookCopy) -> BookCopyDTO:
         pass
 
-class CustomMapper:
+class CustomerMapper:
 
     @staticmethod
     def dto_to_dict(customer:CustomerDTO) -> dict:
@@ -101,3 +101,15 @@ class FullNameMapper:
     def dto_to_dict(full_name: FullNameDTO) -> dict:
         full_name_dict = full_name.model_dump(exclude_unset=True)
         return full_name_dict
+
+class PhoneMapper:
+
+    @staticmethod
+    def phone_number_to_united_style(phone: str) -> str:
+        """Mapped phone number to format: +380 44 123 45 67"""
+        MISSED_COUNTRY_CODE = '38'
+        SPACES = [2, 4, 7, 9]
+        phone_number = "".join( ch for ch in phone if ch not in string.punctuation or not ch.isspace())
+        if phone_number[0] == '0':
+            phone_number = MISSED_COUNTRY_CODE.join(phone_number)
+        return "+".join((ch + " ") if i in SPACES else ch for i, ch in enumerate(phone_number))

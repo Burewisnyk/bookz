@@ -1,5 +1,6 @@
 import faker
 from ..orm_models import Author, Book, Customer
+from ...mappers.mappers import PhoneMapper
 
 
 fake_gen = faker.Faker("uk_UA")
@@ -59,7 +60,7 @@ def generate_fake_customers(quantity: int) -> list[Customer]:
             middle_name = fake_gen.first_name_female() + fake_gen.random_element(
                 female_patronymic_suffixes) if fake_gen.boolean(chance_of_getting_true=70) else None
         email = fake_gen.unique.email()
-        phone = fake_gen.unique.phone_number()
+        phone = PhoneMapper.phone_number_to_united_style(fake_gen.unique.phone_number())
         fake_customers.append(Customer(first_name=first_name, last_name=last_name, middle_name=middle_name,
                                        email=email, phone=phone))
     return fake_customers

@@ -37,7 +37,7 @@ class NewBookCopyDTO(BaseModel):
     book_id: int = Field(..., ge=0)
     status: BookStatus = Field(BookStatus.UNKNOWN)
     statement: BookStatement = Field(BookStatement.NEW)
-    placement: int | None = Field(None)
+    placement_id: int | None = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -90,6 +90,9 @@ class FullNameDTO(BaseModel):
     last_name: str = Field(..., min_length=3, max_length=80)
     middle_name: str | None = Field(None, min_length=3, max_length=40)
 
+    def __str__(self) -> str:
+        return f"{self.last_name.upper()} {self.first_name} {self.middle_name if self.middle_name else ''}"
+
 class DepositoryDTO(BaseModel):
     max_lines: str = Field(..., min_length=1, max_length=1)
     max_columns: int = Field(..., ge=1)
@@ -109,6 +112,10 @@ class NewDepositoryDTO(BaseModel):
     max_books_copies_per_book: int = Field(5, ge=1)
     authors_number: int = Field(50, ge=0)
     customers_number: int = Field(100, ge=0)
+
+
+class StringDTO(BaseModel):
+    string: str = Field(...)
 
 
 

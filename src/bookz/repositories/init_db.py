@@ -1,13 +1,11 @@
-import os
 import random
 import string
 from sqlalchemy import select, update
-from .orm_models import *
 from ..enums.enums import BookStatus, BookStatement, PlacementStatus
 from ..services.dto_models import NewDepositoryDTO
 from ..db import reset_db, get_context_session
-from .data_generator.data_generator import *
-from ..mappers.mappers import *
+from .data_generator.data_generator import generate_fake_customers, generate_fake_books, generate_fake_authors
+from .orm_models import BookAuthor, Placement, Author, Book, Customer, BookCopy
 
 def init_db(depo: NewDepositoryDTO) -> None:
 
@@ -22,12 +20,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
             for column in range(1, depo.columns + 1): #type: ignore
                 for shelf in shelf_ids:
                     for position in range(1, depo.positions + 1): # type: ignore
-                        placement = Placement(
-                            line_id=line,
-                            column_id=column,
-                            shelf_id=shelf,
-                            position=position
-                        )
+                        placement = Placement(line_id=line, column_id=column, shelf_id=shelf, position=position)
                         session.add(placement)
 
         # Create authors
@@ -68,7 +61,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
         for book_id in book_ids:
             num_of_copies = random.randint(1, depo.max_books_copies_per_book)
             for copy in range(num_of_copies): #type: ignore
-                status = random.choices([BookStatus.AVAILABLE, BookStatus.LANDED,
+                status = random.choices([BookStatus.AVAILABLE, BookStatus.BORROWED,
                                          BookStatus.LOST], weights=(70, 25, 5))[0]
                 statement = random.choices([BookStatement.NEW, BookStatement.GOOD,
                                             BookStatement.REPAIR, BookStatement.DAMAGED],
@@ -87,7 +80,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
                         .where(Placement.id == placement)
                     )
                     session.execute(stmt)
-                elif status == BookStatus.LANDED:
+                elif status == BookStatus.BORROWED:
                     session.add(BookCopy(
                         book_id=book_id,
                         status=status,

@@ -1,6 +1,9 @@
 class AuthorNotFound(Exception):
     pass
 
+class AuthorFullNameAlreadyExist(Exception):
+    pass
+
 class AuthorUpdateConflict(Exception):
     pass
 

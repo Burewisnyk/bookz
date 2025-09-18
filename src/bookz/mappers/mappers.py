@@ -109,7 +109,7 @@ class PhoneMapper:
         """Mapped phone number to format: +380 44 123 45 67"""
         MISSED_COUNTRY_CODE = '38'
         SPACES = [2, 4, 7, 9]
-        phone_number = "".join( ch for ch in phone if ch not in string.punctuation or not ch.isspace())
+        phone_number = "".join( ch for ch in phone if ch.isdigit())
         if phone_number[0] == '0':
-            phone_number = MISSED_COUNTRY_CODE.join(phone_number)
-        return "+".join((ch + " ") if i in SPACES else ch for i, ch in enumerate(phone_number))
+            phone_number = MISSED_COUNTRY_CODE + phone_number
+        return "+" + "".join((ch + " ") if i in SPACES else ch for i, ch in enumerate(phone_number))

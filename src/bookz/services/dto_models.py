@@ -1,11 +1,14 @@
 from __future__ import  annotations
 from pydantic import Field, BaseModel, ConfigDict, EmailStr
-from ..enums.enums import BookStatus, BookStatement, PlacementStatus
+from ..enums.enums import BookStatus, BookStatement
 
 
 class AuthorDTO(BaseModel):
-    id: int = Field(..., ge=0)
-    full_name: FullNameDTO = Field(...)
+    id: int = Field(..., ge=0, examples=[1078, 204567])
+    full_name: FullNameDTO = Field(..., examples=[{
+        "first_name": "Mark",
+        "last_name": "Twen"
+    }])
     books: list['BookDTO'] | None = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
@@ -17,19 +20,34 @@ class NewAuthorDTO(BaseModel):
 
 
 class PlacementDTO(BaseModel):
-    id: int = Field(..., ge=0)
-    line_id: str = Field(..., min_length=1, max_length=1)
-    column_id: int = Field(..., ge=1)
-    shelf_id: str = Field(...,min_length=1, max_length=1)
-    position: int = Field(..., ge=1)
+    id: int = Field(..., ge=0, examples=[578, 1265])
+    line_id: str = Field(..., min_length=1, max_length=1, examples=["C", "D"])
+    column_id: int = Field(..., ge=1, examples=[5, 7])
+    shelf_id: str = Field(...,min_length=1, max_length=1, examples=["A", "F"])
+    position: int = Field(..., ge=1, examples=[7, 12])
 
 
 class BookCopyDTO(BaseModel):
-    id: int | None = Field(..., ge=0) # None when creation
+    id: int = Field(..., ge=0, examples=[2490, 8732])
     book: BookDTO
-    status: BookStatus = Field(BookStatus.UNKNOWN)
-    statement: BookStatement = Field(BookStatement.NEW)
-    placement: PlacementDTO | None = Field(None)
+    status: BookStatus = Field(BookStatus.UNKNOWN, examples=[BookStatus.AVAILABLE, BookStatus.BORROWED])
+    statement: BookStatement = Field(BookStatement.NEW, examples=[BookStatement.NEW, BookStatement.REPAIR])
+    placement: PlacementDTO | None = Field(None, examples=[{
+        'id': 578,
+        'line_id': "A",
+        'column_id': 5,
+        'shelf_id': "A",
+        'position': 12
+    }, None])
+    customer: CustomerDTO = Field(None, examples=[None, {
+        'full_name': {
+            'first_name': "John",
+            'last_name': "Doe"
+        },
+        'email': 'JohnDoe@gmail.com',
+        'phone': '+380 66 644 3227',
+        'landed_books': None
+    }])
 
     model_config = ConfigDict(from_attributes=True)
 

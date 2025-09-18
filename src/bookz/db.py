@@ -11,7 +11,7 @@ DATABASE_URL = (f"postgresql+psycopg2://{os.getenv('db_user')}:{os.getenv('db_pa
                 f"@{os.getenv('db_url')}:{os.getenv('db_port')}/{os.getenv('db_name')}"
                 f"?client_encoding=utf8")
 db_name = os.getenv('db_name')
-print(f"DATABASE_URL: {DATABASE_URL}")
+
 
 if not database_exists(DATABASE_URL):
     create_database(DATABASE_URL)

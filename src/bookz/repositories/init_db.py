@@ -7,12 +7,33 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import InterfaceError, DatabaseError
 from ..enums.enums import BookStatus, BookStatement, PlacementStatus
 from ..services.dto_models import NewDepositoryDTO
-from ..db import reset_db, get_context_session
+from ..db import reset_db, get_context_session, database_exists
 from .data_generator.data_generator import generate_fake_customers, generate_fake_books, generate_fake_authors
 from .orm_models import BookAuthor, Placement, Author, Book, Customer, BookCopy
 from ..logger import app_logger,db_logger
 
-def init_db() -> None:
+def init_db_from_config():
+    #Read data from init config file
+    if database_exists():
+        return
+    path_for_config_file = Path(__file__).resolve().parent.parent.parent.parent/"config"/"init_db_config.yaml"
+    app_logger.info("Start reading config file...")
+    depo = None
+    try:
+        with open(path_for_config_file,"r") as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+        depo = NewDepositoryDTO(**config['NewDepository'])
+    except FileNotFoundError:
+        app_logger.error("File init_db_config.yaml not found.")
+    except yaml.YAMLError:
+        app_logger.error("File init_db_config.yaml is not correct.")
+    except ValidationError:
+        app_logger.error("Error validating config file.")
+    app_logger.info(f"Config file read. Config: {str(depo)}")
+    init_db(depo)
+
+
+def init_db(depo: NewDepositoryDTO) -> None:
 
     app_logger.info("Reset database...")
     db_logger.warning("Reset database...")
@@ -20,20 +41,7 @@ def init_db() -> None:
     app_logger.info("Reset database complete.")
     db_logger.warning("Reset database complete.")
 
-    #Read data from init config file
-    path_for_config_file = Path(__file__).resolve().parent.parent.parent.parent/"config"/"init_db_config.yaml"
-    app_logger.info("Start reading config file...")
-    depo = None
-    try:
-        with open(path_for_config_file,"r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-        depo = NewDepositoryDTO(**config)
-    except FileNotFoundError:
-        app_logger.error("File init_db_config.yaml not found.")
-    except yaml.YAMLError:
-        app_logger.error("File init_db_config.yaml is not correct.")
-    except ValidationError:
-        app_logger.error("Error validating config file.")
+
 
     # Insert fake data in DB
     try:
@@ -50,17 +58,19 @@ def init_db() -> None:
                             session.add(placement)
 
             # Create authors
+            app_logger.info(f"Start generation {depo.authors_number} fake authors...")
             authors = generate_fake_authors(depo.authors_number)
             for author in authors:
                 session.add(author)
 
             # Create books
-            books = generate_fake_books(200)
+            app_logger.info(f"Start generation {depo.books_number} fake books...")
+            books = generate_fake_books(depo.books_number)
             for book in books:
                 session.add(book)
 
             # Create customers
-            customers = generate_fake_customers(100)
+            customers = generate_fake_customers(depo.customers_number)
             for customer in customers:
                 session.add(customer)
 
@@ -70,7 +80,7 @@ def init_db() -> None:
             author_ids = session.scalars(select(Author.id)).all()
             book_ids = session.scalars(select(Book.id)).all()
             for book_id in book_ids:
-                num_of_authors = random.randint(0, 3)
+                num_of_authors = random.choices([1, 2, 3, 4], weights=[60, 25, 10, 5])[0]
                 if not num_of_authors:
                     continue
                 selected_authors = random.sample(author_ids, num_of_authors)
@@ -98,6 +108,7 @@ def init_db() -> None:
                             book_id=book_id,
                             status=status,
                             statement=statement,
+                            placement_id=placement
                         ))
                         stmt = (
                             update(Placement)

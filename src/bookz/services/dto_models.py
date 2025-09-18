@@ -1,20 +1,27 @@
 from __future__ import  annotations
-from pydantic import Field, BaseModel, ConfigDict, EmailStr
+from pydantic import Field, BaseModel, ConfigDict, EmailStr, computed_field
+
+
 from ..enums.enums import BookStatus, BookStatement
 
 
 class AuthorDTO(BaseModel):
-    id: int = Field(..., ge=0, examples=[1078, 204567])
-    full_name: FullNameDTO = Field(..., examples=[{
+    id: int = Field(..., ge=0, description='Author id in database', examples=[1078, 204567])
+    full_name: FullNameDTO = Field(..., description='Author full name. Must be unique', examples=[{
         "first_name": "Mark",
-        "last_name": "Twen"
+        "last_name": "Twen",
+        "middle_name": None
     }])
-    books: list['BookDTO'] | None = Field(None)
+    books: list['BookDTO'] | None = Field(None, description='List of books in library that this author has')
 
     model_config = ConfigDict(from_attributes=True)
 
 class NewAuthorDTO(BaseModel):
-    full_name: FullNameDTO = Field(...)
+    full_name: FullNameDTO = Field(..., description='New author full name. Must be unique', examples=[{
+        "first_name": "",
+        "last_name": "Savchu",
+        "middle_name": None
+    }])
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,6 +33,10 @@ class PlacementDTO(BaseModel):
     shelf_id: str = Field(...,min_length=1, max_length=1, examples=["A", "F"])
     position: int = Field(..., ge=1, examples=[7, 12])
 
+    @computed_field
+    def position_code(self) -> str:
+        return (self.line_id + str(self.column_id) + self.shelf_id + str(self.position)).upper()
+
 
 class BookCopyDTO(BaseModel):
     id: int = Field(..., ge=0, examples=[2490, 8732])
@@ -36,8 +47,9 @@ class BookCopyDTO(BaseModel):
         'id': 578,
         'line_id': "A",
         'column_id': 5,
-        'shelf_id': "A",
-        'position': 12
+        'shelf_id': "C",
+        'position': 12,
+        'position_code': "A5C12",
     }, None])
     customer: CustomerDTO = Field(None, examples=[None, {
         'full_name': {
@@ -52,24 +64,44 @@ class BookCopyDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class NewBookCopyDTO(BaseModel):
-    book_id: int = Field(..., ge=0)
-    status: BookStatus = Field(BookStatus.UNKNOWN)
-    statement: BookStatement = Field(BookStatement.NEW)
-    placement_id: int | None = Field(None)
+    book_id: int = Field(..., ge=0, examples=[490, 762])
+    status: BookStatus = Field(BookStatus.UNKNOWN, examples=[BookStatus.AVAILABLE, BookStatus.BORROWED])
+    statement: BookStatement = Field(BookStatement.NEW, examples=[BookStatement.NEW, BookStatement.REPAIR])
+    placement_id: int | None = Field(None, examples=[32349, 1232])
 
     model_config = ConfigDict(from_attributes=True)
 
 class BookDTO(BaseModel):
-    title: str = Field(..., min_length=1, max_length=120)
-    publisher: str = Field(..., min_length=1, max_length=80)
-    place_of_publication: str | None = Field(None, min_length=3, max_length=80)
-    published_year: int | None = Field(None, ge=1700, le=2100)
-    isbn: str | None = Field(None,min_length=10, max_length=20)
-    pages: int | None = Field(None, ge=1)
-    price: float | None = Field(None, ge=0)
-    authors: list[AuthorDTO] | None = Field(None)
-    book_copies: list[BookCopyDTO] | None = Field(None)
-    language: str | None = Field(None, min_length=2, max_length=3)
+    title: str = Field(..., min_length=1, max_length=120, examples=["1984"])
+    authors: list['AuthorDTO'] = Field(None, examples=[{
+        'id': 48,
+        'full_name': {
+            'first_name': "George",
+            'last_name': "Orwell"
+        },
+        'books': None
+    }])
+    publisher: str = Field(..., min_length=1, max_length=80, examples=["Penguin"])
+    place_of_publication: str | None = Field(None, min_length=3, max_length=80, examples=["London"])
+    published_year: int | None = Field(None, ge=1700, le=2100, examples=[2008])
+    isbn: str | None = Field(None,min_length=10, max_length=20, examples=["978-01-41-036144"])
+    pages: int | None = Field(None, ge=1, examples=[336])
+    price: float | None = Field(None, ge=0, examples=[854.0])
+    book_copies: list[BookCopyDTO] | None = Field(None, examples=[{
+        'id': 8217,
+        'book': None,
+        'status': BookStatus.AVAILABLE,
+        'statement': BookStatement.NEW,
+        'placement': {
+            'id': 80328,
+            'line_id': "H",
+            'column_id': 8,
+            'shelf_id': "D",
+            'position': 18
+        },
+        'customer': None
+    }])
+    language: str | None = Field(None, min_length=2, max_length=3, examples=['en'])
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -122,14 +154,14 @@ class DepositoryDTO(BaseModel):
 
 
 class NewDepositoryDTO(BaseModel):
-    lines: int = Field(6, ge=1, le=26)
-    columns: int = Field(4, ge=1)
-    shelves: int = Field(8, ge=1, le=26)
-    positions: int = Field(20, ge=1)
-    books_number: int = Field(200, ge=0)
-    max_books_copies_per_book: int = Field(5, ge=1)
-    authors_number: int = Field(50, ge=0)
-    customers_number: int = Field(100, ge=0)
+    lines: int = Field(6, ge=1, le=26, examples=[5])
+    columns: int = Field(4, ge=1, examples=[6])
+    shelves: int = Field(8, ge=1, le=26, examples=[8])
+    positions: int = Field(20, ge=1, examples=[20])
+    books_number: int = Field(200, ge=0, examples=[1200])
+    max_books_copies_per_book: int = Field(5, ge=1, examples=[20])
+    authors_number: int = Field(50, ge=0, examples=[500])
+    customers_number: int = Field(100, ge=0, examples=[1000])
 
 
 class StringDTO(BaseModel):

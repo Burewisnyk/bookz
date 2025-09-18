@@ -1,5 +1,5 @@
 from sqlalchemy import select, insert, update, delete, func
-from sqlalchemy.orm import Session, selectinload, joinedload
+from sqlalchemy.orm import Session, selectinload, joinedload, noload, with_loader_criteria
 from .orm_models import Author, Book, BookAuthor, BookCopy, Customer, Placement
 from ..enums.enums import PlacementStatus,BookStatus, BookStatement
 
@@ -66,10 +66,22 @@ class BookRepository:
     def find_author(self, author: dict) -> Author | None:
         stmt = (
             select(Author)
-            .where((Author.first_name == author["first_name"])
-                   & (Author.last_name == author["last_name"])
-                   & (Author.middle_name == author["middle_name"]))
-            .options(selectinload(Author.books))
+            .where(
+                (Author.first_name == author["first_name"])
+                & (Author.last_name == author["last_name"])
+                & (Author.middle_name == author["middle_name"])
+            )
+            .options(
+                selectinload(Author.books).options(
+                    selectinload(Book.authors).options(noload(Author.books)),
+                    selectinload(Book.copies).options(
+                        noload(BookCopy.customer),
+                        noload(BookCopy.book),
+                        noload(BookCopy.placement),
+                    ),
+                ),
+                with_loader_criteria(BookCopy, BookCopy.status == BookStatus.AVAILABLE),
+            )
         )
         return self.session.scalar(stmt)
 
@@ -77,7 +89,17 @@ class BookRepository:
         stmt = (
             select(Author)
             .where((Author.id == author_id))
-            .options(selectinload(Author.books))
+            .options(
+                selectinload(Author.books).options(
+                    selectinload(Book.authors).options(noload(Author.books)),
+                    selectinload(Book.copies).options(
+                                                noload(BookCopy.customer),
+                                                       noload(BookCopy.book),
+                                                       noload(BookCopy.placement),
+                    ),
+                ),
+                with_loader_criteria(BookCopy, BookCopy.status == BookStatus.AVAILABLE),
+            )
         )
         if by_update:
             stmt = stmt.with_for_update()

@@ -31,6 +31,9 @@ def reset_db():
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
+def database_exists() -> bool:
+    return database_exists(DATABASE_URL)
+
 @contextmanager
 def get_context_session():
     session = SessionLocal()

@@ -3,7 +3,7 @@ NewDepository:
   columns: 6
   shelves: 8
   positions: 20
-  books_number: 500
-  max_books_copies_per_book: 8
-  authors_number: 700
+  books_number: 800
+  max_books_copies_per_book: 15
+  authors_number: 600
   customers_number: 500

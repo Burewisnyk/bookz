@@ -20,7 +20,6 @@ def get_service(db: Session = Depends(get_session)) -> BookService:
 def create_new_depository(depo: NewDepositoryDTO):
     return init_db(depo)
 
-
 @router.get("/depository/status", response_model=DepositoryDTO)
 async def get_depository_status(service: BookService = Depends(get_service)) -> DepositoryDTO:
     depo = service.depository_status()
@@ -157,10 +156,10 @@ async def create_book_copy(book_copy: NewBookCopyDTO, service: BookService = Dep
 
 
 @router.put("/book-copy/{id}/status/{status}")
-async def change_book_copy_status(id: int, status: BookStatus,
+async def change_book_copy_status(copy_id: int, status: BookStatus,
                                   service: BookService = Depends(get_service)) -> BookCopyDTO:
     try:
-        return service.change_book_copy_status(id=id, status=status)
+        return service.change_book_copy_status(copy_id=copy_id, status=status)
     except StorageSpaceIsNotSufficient as e:
         raise HTTPException(status_code=409, detail=str(e))
     except BookCopyNotFound as e:
@@ -170,10 +169,10 @@ async def change_book_copy_status(id: int, status: BookStatus,
 
 
 @router.put("/book-copy/{id}/statement/{statement}")
-async def change_book_copy_statement(id: int, statement: BookStatement,
+async def change_book_copy_statement(copy_id: int, statement: BookStatement,
                                      service: BookService = Depends(get_service)) -> BookCopyDTO:
     try:
-        return service.change_book_copy_statement(id=id, statement=statement)
+        return service.change_book_copy_statement(copy_id=copy_id, statement=statement)
     except WrongNewStatement as e:
         raise HTTPException(status_code=409, detail=str(e))
     except BookCopyNotFound as e:
@@ -181,9 +180,9 @@ async def change_book_copy_statement(id: int, statement: BookStatement,
 
 
 @router.delete("/book-copy/{id}")
-async def delete_book_copy(book_id: int, service: BookService = Depends(get_service)) -> BookCopyDTO:
+async def delete_book_copy(copy_id: int, service: BookService = Depends(get_service)) -> BookCopyDTO:
     try:
-        return service.delete_book_copy(id=book_id)
+        return service.delete_book_copy(copy_id=copy_id)
     except BookCopyNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
     except BookCopyBorrowed as e:
@@ -243,7 +242,7 @@ async def create_customer(customer: NewCustomerDTO, service: BookService = Depen
 async def change_customer_phone_number(customer_id: int, phone: StringDTO,
                                        service: BookService = Depends(get_service)) -> CustomerDTO:
     try:
-        return service.change_customer_phone_number(customer_id, Str)
+        return service.change_customer_phone_number(customer_id=customer_id, phone=phone)
     except PhoneValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except CustomerNotFound as e:

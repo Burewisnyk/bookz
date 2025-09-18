@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from .db import close_db
-from .repositories.init_db import init_db
+from .repositories.init_db import init_db_from_config
 from .routers.router import router
 from .services.dto_models import NewDepositoryDTO
 from .logger import app_logger
@@ -12,7 +12,7 @@ app_logger.info("Start main module")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app_logger.info("Starting initialize project database...")
-    init_db()
+    init_db_from_config()
     app_logger.info("Initialization complete.")
     yield
     close_db()

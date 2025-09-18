@@ -37,14 +37,15 @@ class BookService:
         if not author:
             app_logger.warning(f"Author with id {author_id} not found")
             raise AuthorNotFound(f"Author with id {author_id} not found")
+        app_logger.info(f"Author:{author}, books: {author.books}, {author.books[0].copies}")
         return AuthorMapper.orm_to_dto(author)
 
     def find_author_by_full_name(self, author: FullNameDTO) -> AuthorDTO:
         app_logger.info(f"Calling find_author_by_full_name function with parameter: {author}")
         find_author = self.repo.find_author(author=FullNameMapper.dto_to_dict(author))
         if not author:
-            app_logger.warning(f"Author with full name \"{str(author)}\" not found")
-            raise AuthorNotFound(f"Author with full name {str(author)} not found")
+            app_logger.warning(f"Author with full name \"{author}\" not found")
+            raise AuthorNotFound(f"Author with full name {author} not found")
         return AuthorMapper.orm_to_dto(find_author)
 
     def create_author(self, author: NewAuthorDTO) -> AuthorDTO:

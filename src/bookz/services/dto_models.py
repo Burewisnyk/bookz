@@ -39,7 +39,7 @@ class PlacementDTO(BaseModel):
 
 
 class BookCopyDTO(BaseModel):
-    id: int = Field(..., ge=0, examples=[2490, 8732])
+    copy_id: int = Field(..., ge=0, examples=[2490, 8732])
     book: BookDTO
     status: BookStatus = Field(BookStatus.UNKNOWN, examples=[BookStatus.AVAILABLE, BookStatus.BORROWED])
     statement: BookStatement = Field(BookStatement.NEW, examples=[BookStatement.NEW, BookStatement.REPAIR])
@@ -51,7 +51,7 @@ class BookCopyDTO(BaseModel):
         'position': 12,
         'position_code': "A5C12",
     }, None])
-    customer: CustomerDTO = Field(None, examples=[None, {
+    customer: CustomerDTO | None = Field(None, examples=[None, {
         'full_name': {
             'first_name': "John",
             'last_name': "Doe"
@@ -72,7 +72,15 @@ class NewBookCopyDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class BookDTO(BaseModel):
+    book_id: int = Field(..., ge=0, examples=[238, 162])
     title: str = Field(..., min_length=1, max_length=120, examples=["1984"])
+    publisher: str = Field(..., min_length=1, max_length=80, examples=["Penguin"])
+    place_of_publication: str | None = Field(None, min_length=3, max_length=80, examples=["London"])
+    published_year: int | None = Field(None, ge=1700, le=2100, examples=[2008])
+    isbn: str | None = Field(None,min_length=10, max_length=20, examples=["978-01-41-036144"])
+    pages: int | None = Field(None, ge=1, examples=[336])
+    price: float | None = Field(None, ge=0, examples=[854.0])
+    language: str | None = Field(None, min_length=2, max_length=3, examples=['en'])
     authors: list['AuthorDTO'] = Field(None, examples=[{
         'id': 48,
         'full_name': {
@@ -81,12 +89,6 @@ class BookDTO(BaseModel):
         },
         'books': None
     }])
-    publisher: str = Field(..., min_length=1, max_length=80, examples=["Penguin"])
-    place_of_publication: str | None = Field(None, min_length=3, max_length=80, examples=["London"])
-    published_year: int | None = Field(None, ge=1700, le=2100, examples=[2008])
-    isbn: str | None = Field(None,min_length=10, max_length=20, examples=["978-01-41-036144"])
-    pages: int | None = Field(None, ge=1, examples=[336])
-    price: float | None = Field(None, ge=0, examples=[854.0])
     book_copies: list[BookCopyDTO] | None = Field(None, examples=[{
         'id': 8217,
         'book': None,
@@ -101,7 +103,7 @@ class BookDTO(BaseModel):
         },
         'customer': None
     }])
-    language: str | None = Field(None, min_length=2, max_length=3, examples=['en'])
+
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -120,11 +122,12 @@ class NewBookDTO(BaseModel):
 
 
 class CustomerDTO(BaseModel):
+    customer_id: int = Field(..., ge=0, examples=[490, 762])
     full_name: FullNameDTO = Field(...)
     email: EmailStr
     phone: str = Field(..., pattern=r'^\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}[-.\s]?\d{1,6}$',
                        max_length=20)
-    landed_books: list[BookCopyDTO] | None = Field(None)
+    borrowed_books: list[BookCopyDTO] | None = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
 

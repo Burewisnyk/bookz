@@ -34,7 +34,7 @@ class Author(Base, TimestampMixin):
 class Book(Base, TimestampMixin):
     __tablename__ = 'books'
 
-    id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
+    book_id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     publisher: Mapped[str] = mapped_column(String(80), nullable=False)
     place_of_publication: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -45,14 +45,14 @@ class Book(Base, TimestampMixin):
     language: Mapped[str | None] = mapped_column(String(3))
 
     authors: Mapped[list[Author]] = relationship("Author", secondary='book_author', back_populates='books')
-    copies: Mapped[list[BookCopy]] = relationship("BookCopy", back_populates='book')
+    book_copies: Mapped[list[BookCopy]] = relationship("BookCopy", back_populates='book')
 
     __table_args__ = (Index('ix_title', 'title'),
                       UniqueConstraint('isbn', name='uq_isbn'),
                       )
 
     def __repr__(self) -> str:
-        return (f"Book(id={self.id}, title='{self.title}', publisher='{self.publisher}', "
+        return (f"Book(id={self.book_id}, title='{self.title}', publisher='{self.publisher}', "
                 f"place_of_publication='{self.place_of_publication}', published_year={self.published_year}, "
                 f"isbn='{self.isbn}', pages={self.pages}, price={self.price}, language='{self.language}')")
 
@@ -60,7 +60,7 @@ class Book(Base, TimestampMixin):
 class BookAuthor(Base):
     __tablename__ = 'book_author'
 
-    book_id: Mapped[int] = mapped_column(ForeignKey('books.id'), primary_key=True)
+    book_id: Mapped[int] = mapped_column(ForeignKey('books.book_id'), primary_key=True)
     author_id: Mapped[int] = mapped_column(ForeignKey('authors.id'), primary_key=True)
 
     def __repr__(self) -> str:
@@ -70,20 +70,20 @@ class BookAuthor(Base):
 class BookCopy(Base, TimestampMixin):
     __tablename__ = 'book_copies'
 
-    id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
-    book_id: Mapped[int] = mapped_column(ForeignKey('books.id'), nullable=False)
+    copy_id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
+    book_id: Mapped[int] = mapped_column(ForeignKey('books.book_id'), nullable=False)
     status: Mapped[BookStatus] = mapped_column(PgEnum(BookStatus, name="book_copy_status"), nullable=False,
                                                default=BookStatus.AVAILABLE)
     placement_id : Mapped[int | None] = mapped_column(ForeignKey('placements.id'), default=None)
     statement: Mapped[BookStatement] = mapped_column(PgEnum(BookStatement), nullable=False, default=BookStatement.NEW)
     customer_id: Mapped[int | None] = mapped_column(ForeignKey('customers.customer_id'), default=None)
 
-    book: Mapped[Book] = relationship("Book", back_populates='copies')
+    book: Mapped[Book] = relationship("Book", back_populates='book_copies')
     customer: Mapped[Customer] = relationship("Customer", back_populates='borrowed_books')
     placement: Mapped[Placement] = relationship("Placement", back_populates='book_copy')
 
     def __repr__(self) -> str:
-        return (f"BookCopy(id={self.id}, book={self.book}, status='{self.status.value}', "
+        return (f"BookCopy(id={self.copy_id}, book={self.book}, status='{self.status.value}', "
                 f"placement='{self.placement}', statement='{self.statement.value}')")
 
 

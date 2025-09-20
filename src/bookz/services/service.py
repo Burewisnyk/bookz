@@ -138,7 +138,7 @@ class BookService:
                     ath = self.repo.find_author(AuthorMapper.new_dto_to_dict(author))
                     if not ath:
                         ath = self.repo.create_author(AuthorMapper.new_dto_to_dict(author))
-                    self.repo.create_author_book_rel(book_id=new_book.id, author_id=ath.id)  #type: ignore
+                    self.repo.create_author_book_rel(book_id=new_book.book_id, author_id=ath.id)  #type: ignore
                 available_places = self.repo.find_free_place(book.new_copies)
                 places = available_places.copy()
                 if len(available_places) < book.new_copies:
@@ -170,7 +170,7 @@ class BookService:
             place_ids: list[int] = []
             copy_ids: list[int] = []
             borrowed_copies_ids: list[int] = []
-            for copy in book.copies:
+            for copy in book.book_copies:
                 if copy.status == BookStatus.BORROWED:
                     borrowed_copies_ids.append(copy.id)
                 if copy.status == BookStatus.AVAILABLE:
@@ -183,7 +183,7 @@ class BookService:
                                        f"Change its status before delete")
             self.repo.delete_book_copies_by_ids(ids=copy_ids)
             self.repo.change_places_status(place_ids = place_ids, status=PlacementStatus.FREE)
-            self.repo.delete_book_by_id(book.id) #type: ignore
+            self.repo.delete_book_by_id(book.book_id) #type: ignore
         return book
 
     def delete_books_without_copies(self) -> list[BookDTO]:
@@ -193,7 +193,7 @@ class BookService:
                 raise BookNotFound(f"Books without copy found")
             book_ids: list[int] = []
             for book in books:
-                book_ids.append(book.id)  #type: ignore
+                book_ids.append(book.book_id)  #type: ignore
             books = self.repo.delete_books(book_ids=book_ids)
         deleted_books: list[BookDTO] = []
         for book in books:
@@ -245,7 +245,7 @@ class BookService:
             book_copy.placement = place
             book_copy = self.repo.create_book_copy(BookCopyMapper.new_dto_to_dict(book_copy))
             self.repo.change_place_status(place_id=place.pop(), status=PlacementStatus.OCCUPIED)
-            book_copy = self.repo.find_book_by_id(book_copy.id)  #type: ignore
+            book_copy = self.repo.find_book_by_id(book_copy.copy_id)  #type: ignore
         return BookCopyMapper.orm_to_dto(book_copy)
 
     def change_book_copy_status(self, copy_id: int, status: BookStatus, customer_id: int | None = None) -> BookCopyDTO:

@@ -7,15 +7,19 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import InterfaceError, DatabaseError
 from ..enums.enums import BookStatus, BookStatement, PlacementStatus
 from ..services.dto_models import NewDepositoryDTO
-from ..db import reset_db, get_context_session, database_exists
+from ..db import reset_db, get_session, is_database_exists, start_db
 from .data_generator.data_generator import generate_fake_customers, generate_fake_books, generate_fake_authors
 from .orm_models import BookAuthor, Placement, Author, Book, Customer, BookCopy
 from ..logger import app_logger,db_logger
 
 def init_db_from_config():
     #Read data from init config file
-    if database_exists():
+    if is_database_exists():
+        app_logger.info(f"Database already exists, skipping.")
         return
+    else:
+        app_logger.info(f"Database doesn't exist, creating it.")
+        start_db()
     path_for_config_file = Path(__file__).resolve().parent.parent.parent.parent/"config"/"init_db_config.yaml"
     app_logger.info("Start reading config file...")
     depo = None
@@ -32,7 +36,6 @@ def init_db_from_config():
     app_logger.info(f"Config file read. Config: {str(depo)}")
     init_db(depo)
 
-
 def init_db(depo: NewDepositoryDTO) -> None:
 
     app_logger.info("Reset database...")
@@ -41,11 +44,9 @@ def init_db(depo: NewDepositoryDTO) -> None:
     app_logger.info("Reset database complete.")
     db_logger.warning("Reset database complete.")
 
-
-
     # Insert fake data in DB
     try:
-        with (get_context_session() as session):
+        with (get_session() as session):
             app_logger.info("Start creation fake dates for database...")
             # Create placement
             line_ids = list(string.ascii_uppercase[:depo.lines])
@@ -78,7 +79,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
 
             # Create book-author relations
             author_ids = session.scalars(select(Author.id)).all()
-            book_ids = session.scalars(select(Book.id)).all()
+            book_ids = session.scalars(select(Book.book_id)).all()
             for book_id in book_ids:
                 num_of_authors = random.choices([1, 2, 3, 4], weights=[60, 25, 10, 5])[0]
                 if not num_of_authors:
@@ -91,7 +92,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
                     ))
 
             # Create book copies
-            book_ids = session.scalars(select(Book.id)).all()
+            book_ids = session.scalars(select(Book.book_id)).all()
             placements = session.scalars(select(Placement.id).where(Placement.status == PlacementStatus.FREE)).all()
             customers = session.scalars(select(Customer.customer_id)).all()
             for book_id in book_ids:

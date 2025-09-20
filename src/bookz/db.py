@@ -10,45 +10,48 @@ load_dotenv()
 DATABASE_URL = (f"postgresql+psycopg2://{os.getenv('db_user')}:{os.getenv('db_password')}"
                 f"@{os.getenv('db_url')}:{os.getenv('db_port')}/{os.getenv('db_name')}"
                 f"?client_encoding=utf8")
-db_name = os.getenv('db_name')
 
-
-if not database_exists(DATABASE_URL):
-    create_database(DATABASE_URL)
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Define Base at the top level
 Base = declarative_base()
-Base.metadata.create_all(bind=engine)
+engine = None
+SessionLocal = None
 
-def reset_db():
+def start_db():
     global engine, SessionLocal
-    engine.dispose()
-    if database_exists(engine.url):
-        drop_database(engine.url)
-    create_database(DATABASE_URL)
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    if engine is None:
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    if not database_exists(url=engine.url):
+        create_database(engine.url)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
-def database_exists() -> bool:
+def reset_db():
+    global engine
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    if database_exists(engine.url):
+        drop_database(engine.url)
+    create_database(engine.url)
+    Base.metadata.create_all(bind=engine)
+
+def is_database_exists() -> bool:
+    # Check using the database URL directly
     return database_exists(DATABASE_URL)
 
 @contextmanager
-def get_context_session():
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
 def get_session():
+    """Provides a transactional scope around a series of operations."""
     session = SessionLocal()
     try:
         yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
 def close_db():
     global engine
-    engine.dispose()
+    if engine:
+        engine.dispose()
+        engine = None

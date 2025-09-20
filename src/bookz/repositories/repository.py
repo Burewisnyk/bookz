@@ -74,7 +74,7 @@ class BookRepository:
             .options(
                 selectinload(Author.books).options(
                     selectinload(Book.authors).options(noload(Author.books)),
-                    selectinload(Book.copies).options(
+                    selectinload(Book.book_copies).options(
                         noload(BookCopy.customer),
                         noload(BookCopy.book),
                         noload(BookCopy.placement),
@@ -92,7 +92,7 @@ class BookRepository:
             .options(
                 selectinload(Author.books).options(
                     selectinload(Book.authors).options(noload(Author.books)),
-                    selectinload(Book.copies).options(
+                    selectinload(Book.book_copies).options(
                                                 noload(BookCopy.customer),
                                                        noload(BookCopy.book),
                                                        noload(BookCopy.placement),
@@ -156,8 +156,8 @@ class BookRepository:
     def find_book_by_id(self, book_id: int, for_update: bool = False) -> Book | None:
         stmt = (
             select(Book)
-            .where((Book.id == book_id))
-            .options(selectinload(Book.authors), joinedload(Book.copies))
+            .where((Book.book_id == book_id))
+            .options(selectinload(Book.authors), joinedload(Book.book_copies))
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Book, BookCopy))
@@ -167,15 +167,15 @@ class BookRepository:
         stmt = (
             select(Book)
             .where((Book.isbn == isbn))
-            .options(selectinload(Book.authors), selectinload(Book.copies))
+            .options(selectinload(Book.authors), selectinload(Book.book_copies))
         )
         return self.session.scalar(stmt)
 
     def find_book_without_copy(self, for_update: bool = False) -> list[Book]:
         stmt = (
             select(Book)
-            .outerjoin(Book.copies)
-            .where(Book.copies == None)
+            .outerjoin(Book.book_copies)
+            .where(Book.book_copies == None)
         )
         if for_update:
             stmt = stmt.with_for_update()
@@ -200,7 +200,7 @@ class BookRepository:
     def delete_book_by_id(self, book_id: int) -> Book:
         stmt = (
             delete(Book)
-            .where(Book.id == book_id)
+            .where(Book.book_id == book_id)
             .returning(Book)
         )
         return self.session.scalar(stmt)
@@ -225,7 +225,7 @@ class BookRepository:
     def find_book_copy(self, copy_id: int) -> BookCopy | None:
         stmt = (
             select(BookCopy)
-            .where((BookCopy.id == copy_id))
+            .where((BookCopy.copy_id == copy_id))
             .options(joinedload(BookCopy.book).options(joinedload(Book.authors)),
                      selectinload(BookCopy.customer))
         )
@@ -234,7 +234,7 @@ class BookRepository:
     def find_book_copies_by_ids(self, ids: list[int]) -> list[BookCopy]:
         stmt = (
             select(BookCopy)
-            .where(BookCopy.id.in_(ids))
+            .where(BookCopy.copy_id.in_(ids))
             .options(joinedload(BookCopy.book).options(joinedload(BookCopy.authors)),
                      selectinload(BookCopy.customer))
         )
@@ -282,7 +282,7 @@ class BookRepository:
         stmt = (
             insert(BookCopy)
             .values(book_copies)
-            .returning(BookCopy.id)
+            .returning(BookCopy.copy_id)
         )
         ids = list(self.session.scalars(stmt).all())
         return self.find_book_copies_by_ids(ids)
@@ -290,7 +290,7 @@ class BookRepository:
     def update_book_copy(self, copy_id: int, book_copy: dict) -> BookCopy:
         stmt = (
             update(BookCopy)
-            .where(BookCopy.id == copy_id)
+            .where(BookCopy.copy_id == copy_id)
             .values(book_copy)
         )
         self.session.execute(stmt)
@@ -299,7 +299,7 @@ class BookRepository:
     def delete_book_copy(self, copy_id: int) -> BookCopy | None:
         stmt = (
             delete(BookCopy)
-            .where(BookCopy.id == copy_id)
+            .where(BookCopy.copy_id == copy_id)
             .returning(BookCopy)
         )
         return self.session.scalar(stmt)
@@ -307,7 +307,7 @@ class BookRepository:
     def delete_book_copies_by_ids(self, ids: list[int]) -> list[BookCopy]:
         stmt = (
             delete(BookCopy)
-            .where(BookCopy.id.in_(ids))
+            .where(BookCopy.copy_id.in_(ids))
             .returning(BookCopy)
         )
         return list(self.session.scalars(stmt).all())

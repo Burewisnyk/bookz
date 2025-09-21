@@ -35,7 +35,9 @@ def reset_db():
     global engine
     if not engine:
         close_db()
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = creat
+
+    e_engine(DATABASE_URL, pool_pre_ping=True)
     if database_exists(engine.url):
         drop_database(engine.url)
     create_database(engine.url)

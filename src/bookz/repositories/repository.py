@@ -60,7 +60,7 @@ class BookRepository:
             .where(Placement.id.in_(place_ids))
             .values(status=status)
         )
-        return self.session.scalar(stmt)
+        return list(self.session.scalars(stmt).all())
 
     #Author
     def find_author(self, author: dict) -> Author | None:
@@ -169,7 +169,7 @@ class BookRepository:
             .where((Book.isbn == isbn))
             .options(selectinload(Book.authors), selectinload(Book.book_copies))
         )
-        return self.session.scalar(stmt)
+        return self.session.scalars(stmt).one_or_none()
 
     def find_book_without_copy(self, for_update: bool = False) -> list[Book]:
         stmt = (
@@ -222,13 +222,15 @@ class BookRepository:
         return self.session.scalar(stmt)
 
     #BookCopies
-    def find_book_copy(self, copy_id: int) -> BookCopy | None:
+    def find_book_copy(self, copy_id: int, for_update: bool = False) -> BookCopy | None:
         stmt = (
             select(BookCopy)
             .where((BookCopy.copy_id == copy_id))
             .options(joinedload(BookCopy.book).options(joinedload(Book.authors)),
                      selectinload(BookCopy.customer))
         )
+        if for_update:
+            stmt = stmt.with_for_update()
         return self.session.scalar(stmt)
 
     def find_book_copies_by_ids(self, ids: list[int]) -> list[BookCopy]:

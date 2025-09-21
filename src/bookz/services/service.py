@@ -52,10 +52,6 @@ class BookService:
         app_logger.info(f"Calling create_author function with parameter: {author}")
         try:
             with self.session.begin():
-                present_author = self.find_author_by_full_name(author.full_name)
-                if present_author:
-                    app_logger.warning(f"Author with full name {str(author.full_name)} already exists in database")
-                    return present_author
                 author = self.repo.create_author(AuthorMapper.new_dto_to_dict(author))
             return AuthorMapper.orm_to_dto(author)
         except IntegrityError as e:
@@ -85,7 +81,7 @@ class BookService:
     def delete_author_by_id(self, author_id: int) -> AuthorDTO:
         app_logger.info(f"Calling delete_author_by_id function with parameter: {author_id}")
         book_author = self.repo.find_books_by_author_id(author_id)
-        if not book_author:
+        if book_author:
             app_logger.warning(f"Author with id {author_id} not found")
             raise BookPresentInDatabase(f"{len(book_author)} book(s) is present in repository. Delete author books "
                                         f"before deleting the author")
@@ -128,7 +124,7 @@ class BookService:
     def create_book(self, book: NewBookDTO) -> BookDTO:
         app_logger.info(f"Calling create_book function with parameter: {book}")
         present_book = self.find_book_by_isbn(book.isbn)
-        if not present_book:
+        if present_book:
             app_logger.warning(f"Book not created. Book with isbn {book.isbn} present in database")
             raise BookPresentInDatabase(f"Book with isbn {book.isbn} present in database")
         try:
@@ -254,7 +250,7 @@ class BookService:
         if status==BookStatus.BORROWED and not customer_id:
             app_logger.warning(f"Bad function parameters. For status BORROWED customer_id must be not NULL")
             raise CustomerMustBeGiven(f"When book copy is borrowed, customer id is required")
-        book_copy = self.repo.find_book_by_id(copy_id, for_update=True)
+        book_copy = self.repo.find_book_copy(copy_id, for_update=True)
         if not book_copy:
             app_logger.warning(f"Book with copy_id: {copy_id} not found")
             raise BookCopyNotFound(f"Book copy with id {copy_id} not found")

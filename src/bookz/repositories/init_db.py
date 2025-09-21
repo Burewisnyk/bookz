@@ -14,6 +14,7 @@ from ..logger import app_logger,db_logger
 
 def init_db_from_config():
     #Read data from init config file
+    app_logger.debug(f"Calling init_db_from_config()")
     if is_database_exists():
         app_logger.info(f"Database already exists, skipping.")
         return
@@ -36,13 +37,18 @@ def init_db_from_config():
     app_logger.info(f"Config file read. Config: {str(depo)}")
     init_db(depo)
 
-def init_db(depo: NewDepositoryDTO) -> None:
-
+def init_db_with_reset(depo: NewDepositoryDTO):
+    app_logger.debug(f"Calling init_db_with_reset()")
     app_logger.info("Reset database...")
     db_logger.warning("Reset database...")
     reset_db()
     app_logger.info("Reset database complete.")
     db_logger.warning("Reset database complete.")
+    init_db(depo)
+
+
+def init_db(depo: NewDepositoryDTO) -> None:
+
 
     # Insert fake data in DB
     try:

@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from .db import close_db
 from .repositories.init_db import init_db_from_config
 from .routers.router import router
-from .services.dto_models import NewDepositoryDTO
 from .logger import app_logger
 
 app_logger.info("Start main module")

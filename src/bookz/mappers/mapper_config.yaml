@@ -1,0 +1,88 @@
+AUTHOR:
+  dto: !class AuthorDTO
+  nested_transform:
+    full_name:
+      dto: !class FullNameDTO
+      orm_fields: [first_name, last_name, middle_name]
+  relationships:
+    books:
+      dto: !class BookDTO
+      exclude: [price]
+      relationships:
+        copies:
+          dto: !class BookCopyDTO
+          exclude: [book, status, placement, customer]
+        authors:
+          dto: !class AuthorDTO
+          nested_transform:
+            full_name:
+              dto: !class FullNameDTO
+              orm_fields: [first_name, last_name, middle_name]
+          'exclude': [books]
+
+BOOK:
+  dto: !class BookDTO
+  relationships:
+    authors:
+      dto: !class AuthorDTO
+      exclude: [books]
+      nested_transform:
+        full_name:
+          dto: !class FullNameDTO
+          orm_fields: [first_name, last_name, middle_name]
+    book_copies:
+      dto: !class BookCopyDTO
+      exclude: [customer]
+      relationships:
+        placement:
+          dto: !class PlacementDTO
+
+
+BOOK_COPY:
+  dto: !class BookCopyDTO
+  relationships:
+    placement:
+      dto: !class PlacementDTO
+    customer:
+      dto: !class CustomerDTO
+      exclude: [borrowed_books]
+    book:
+      dto: !class BookDTO
+      exclude: [book_copies]
+      relationships:
+        authors:
+          dto: !class AuthorDTO
+          exclude: [books]
+          nested_transform:
+            full_name:
+              dto: !class FullNameDTO
+              orm_fields: [first_name, last_name, middle_name]
+
+CUSTOMER:
+  dto: !class CustomerDTO
+  nested_transform:
+    full_name:
+      dto: !class FullNameDTO
+      orm_fields: [first_name, last_name, middle_name]
+  relationships:
+    borrowed_books:
+      dto: !class BookCopyDTO
+      exclude: [placement, customer]
+      relationships:
+        book:
+          dto: !class BookDTO
+          exclude: [book_copies]
+          relationships:
+            authors:
+              dto: !class AuthorDTO
+              exclude: [books]
+              nested_transform:
+                full_name:
+                  dto: !class FullNameDTO
+                  orm_fields: [first_name, last_name, middle_name]
+
+
+
+
+
+

@@ -52,7 +52,7 @@ def init_db(depo: NewDepositoryDTO) -> None:
 
     # Insert fake data in DB
     try:
-        with (get_session() as session):
+        with get_session() as session:
             app_logger.info("Start creation fake dates for database...")
             # Create placement
             line_ids = list(string.ascii_uppercase[:depo.lines])

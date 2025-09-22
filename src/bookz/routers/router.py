@@ -155,7 +155,7 @@ async def create_book_copy(book_copy: NewBookCopyDTO, service: BookService = Dep
         raise HTTPException(status_code=409, detail=str(e))
 
 
-@router.put("/book-copy/{id}/status/{status}")
+@router.put("/book-copy/{copy_id}/status/{status}")
 async def change_book_copy_status(copy_id: int, status: BookStatus,
                                   service: BookService = Depends(get_service)) -> BookCopyDTO:
     try:

@@ -35,9 +35,7 @@ def reset_db():
     global engine
     if not engine:
         close_db()
-    engine = creat
-
-    e_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
     if database_exists(engine.url):
         drop_database(engine.url)
     create_database(engine.url)
@@ -54,10 +52,6 @@ def get_session():
     session = SessionLocal()
     try:
         yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
     finally:
         session.close()
 

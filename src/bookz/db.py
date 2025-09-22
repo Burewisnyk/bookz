@@ -46,10 +46,13 @@ def is_database_exists() -> bool:
     app_logger.debug(f"Calling is_database_exists function")
     return database_exists(DATABASE_URL)
 
-@contextmanager
+
 def get_session():
     """Provides a transactional scope around a series of operations."""
+    global SessionLocal
+    app_logger.debug(f'Type of session: {type(SessionLocal)}')
     session = SessionLocal()
+    app_logger.debug(f'Type of session: {type(session)}')
     try:
         yield session
     finally:

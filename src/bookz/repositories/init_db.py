@@ -17,6 +17,7 @@ def init_db_from_config():
     app_logger.debug(f"Calling init_db_from_config()")
     if is_database_exists():
         app_logger.info(f"Database already exists, skipping.")
+        start_db()
         return
     else:
         app_logger.info(f"Database doesn't exist, creating it.")

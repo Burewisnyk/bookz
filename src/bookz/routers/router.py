@@ -7,12 +7,14 @@ from ..enums.enums import BookStatus, BookStatement
 from ..services.service import BookService
 from ..db import get_session
 from ..repositories.init_db import init_db
+from ..logger import app_logger
 
 router = APIRouter()
 
 
-def get_service(db: Session = Depends(get_session)) -> BookService:
-    return BookService(db)
+def get_service(session: Session = Depends(get_session)) -> BookService:
+    app_logger.debug(f'Type of session: {type(session)}')
+    return BookService(session)
 
 
 #Depository endpoints
@@ -22,6 +24,7 @@ def create_new_depository(depo: NewDepositoryDTO):
 
 @router.get("/depository/status", response_model=DepositoryDTO)
 async def get_depository_status(service: BookService = Depends(get_service)) -> DepositoryDTO:
+    app_logger.debug(f'Calling get_depository_status function')
     depo = service.depository_status()
     return depo
 

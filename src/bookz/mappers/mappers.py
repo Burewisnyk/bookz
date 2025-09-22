@@ -37,6 +37,7 @@ class CustomORMMapper:
 
     @staticmethod
     def map_recursively(orm_instance, config: dict, max_depth: int = 5, _current_depth: int = 0):
+        app_logger.debug(f"Mapping {orm_instance} Config: {config} ")
         if orm_instance is None or _current_depth >= max_depth:
             return None
 
@@ -69,10 +70,11 @@ class CustomORMMapper:
             if 'relationships' in config and orm_attr_name in config['relationships']:
                 nested_config = config['relationships'][orm_attr_name]
                 nested_orm_instance = getattr(orm_instance, orm_attr_name)
-
-                dto_data[field_name] = CustomORMMapper.map_recursively(
-                    nested_orm_instance, nested_config, max_depth, _current_depth + 1
-                )
+                if nested_orm_instance is None:
+                    dto_data[field_name] = None
+                else:
+                    dto_data[field_name] = CustomORMMapper.map_recursively(
+                        nested_orm_instance, nested_config, max_depth, _current_depth + 1)
                 continue
 
             if hasattr(orm_instance, orm_attr_name):

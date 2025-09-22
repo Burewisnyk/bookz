@@ -14,6 +14,7 @@ from ..logger import app_logger
 class BookService:
 
     def __init__(self, session: Session) -> None:
+        app_logger.debug(f'Type of session: {type(session)}')
         self.session = session
         self.repo = BookRepository(session)
 
@@ -28,6 +29,7 @@ class BookService:
             books_in_storage=self.repo.get_number_books_in_depository(),
             free_places=self.repo.get_number_of_free_places()
         )
+        app_logger.debug(f'DepositoryDTO: {depo}')
         return depo
 
     # Author functions
@@ -37,7 +39,7 @@ class BookService:
         if not author:
             app_logger.warning(f"Author with id {author_id} not found")
             raise AuthorNotFound(f"Author with id {author_id} not found")
-        app_logger.info(f"Author:{author}, books: {author.books}, {author.books[0].copies}")
+        app_logger.info(f"Author:{author}, books: {author.books}, {author.books[0].book_copies}")
         return AuthorMapper.orm_to_dto(author)
 
     def find_author_by_full_name(self, author: FullNameDTO) -> AuthorDTO:

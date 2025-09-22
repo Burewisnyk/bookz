@@ -9,9 +9,9 @@ AUTHOR:
       dto: !class BookDTO
       exclude: [price]
       relationships:
-        copies:
+        book_copies:
           dto: !class BookCopyDTO
-          exclude: [book, status, placement, customer]
+          exclude: [book, placement, customer]
         authors:
           dto: !class AuthorDTO
           nested_transform:

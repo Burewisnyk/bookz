@@ -2,11 +2,12 @@ from sqlalchemy import select, insert, update, delete, func
 from sqlalchemy.orm import Session, selectinload, joinedload, noload, with_loader_criteria
 from .orm_models import Author, Book, BookAuthor, BookCopy, Customer, Placement
 from ..enums.enums import PlacementStatus,BookStatus, BookStatement
-
+from ..logger import app_logger
 
 class BookRepository:
 
     def __init__(self, session: Session):
+        app_logger.debug(f'Type of session: {type(session)}')
         self.session = session
 
     #Depository
@@ -157,11 +158,16 @@ class BookRepository:
         stmt = (
             select(Book)
             .where((Book.book_id == book_id))
-            .options(selectinload(Book.authors), joinedload(Book.book_copies))
+            .options(selectinload(Book.authors).options(noload(Author.books)),
+                     joinedload(Book.book_copies).options(noload(BookCopy.book),
+                                                          joinedload(BookCopy.placement),
+                                                          joinedload(BookCopy.customer)
+                                                          .options(noload(Customer.borrowed_books)))
+                     )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Book, BookCopy))
-        return self.session.scalars(stmt).one_or_none()
+        return self.session.scalars(stmt).unique().one_or_none()
 
     def find_book_by_isbn(self, isbn: str) -> Book | None:
         stmt = (

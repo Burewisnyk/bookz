@@ -40,9 +40,9 @@ class PlacementDTO(BaseModel):
 
 class BookCopyDTO(BaseModel):
     copy_id: int = Field(..., ge=0, examples=[2490, 8732])
-    book: BookDTO
-    status: BookStatus = Field(BookStatus.UNKNOWN, examples=[BookStatus.AVAILABLE, BookStatus.BORROWED])
-    statement: BookStatement = Field(BookStatement.NEW, examples=[BookStatement.NEW, BookStatement.REPAIR])
+    book: BookDTO | None = Field(None, description='Book information of this book copy')
+    status: BookStatus | None = Field(BookStatus.UNKNOWN, examples=[BookStatus.AVAILABLE, BookStatus.BORROWED])
+    statement: BookStatement | None = Field(BookStatement.NEW, examples=[BookStatement.NEW, BookStatement.REPAIR])
     placement: PlacementDTO | None = Field(None, examples=[{
         'id': 578,
         'line_id': "A",

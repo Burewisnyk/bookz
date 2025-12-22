@@ -17,7 +17,10 @@ dependencies = [
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "uvicorn (>=0.35.0,<0.36.0)",
     "colorlog (>=6.9.0,<7.0.0)",
-    "pyyaml (>=6.0.2,<7.0.0)"
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "ruff>=0.14.6",
+    "black>=25.11.0",
+    "pre-commit>=4.4.0",
 ]
 
 [tool.poetry]

@@ -1,49 +1,66 @@
 from sqlalchemy import select, insert, update, delete, func
-from sqlalchemy.orm import Session, selectinload, joinedload, noload, with_loader_criteria
+from sqlalchemy.orm import (
+    Session,
+    selectinload,
+    joinedload,
+    noload,
+    with_loader_criteria,
+)
 from .orm_models import Author, Book, BookAuthor, BookCopy, Customer, Placement
-from ..enums.enums import PlacementStatus,BookStatus, BookStatement
+from ..enums.enums import PlacementStatus, BookStatus, BookStatement
 from ..logger import app_logger
+
 
 class BookRepository:
 
     def __init__(self, session: Session):
-        app_logger.debug(f'Type of session: {type(session)}')
+        app_logger.debug(f"Type of session: {type(session)}")
         self.session = session
 
-    #Depository
+    # Depository
     def get_number_of_depository_lines(self) -> str:
-        stmt = (select(func.max(Placement.line_id)))
+        stmt = select(func.max(Placement.line_id))
         return self.session.scalar(stmt)
 
     def get_number_of_depository_columns_in_line(self) -> int:
-        stmt = (select(func.max(Placement.column_id)))
+        stmt = select(func.max(Placement.column_id))
         return self.session.scalar(stmt)
 
     def get_number_of_depository_shelves_in_column(self) -> str:
-        stmt = (select(func.max(Placement.shelf_id)))
+        stmt = select(func.max(Placement.shelf_id))
         return self.session.scalar(stmt)
 
     def get_number_of_depository_positions_in_shelve(self) -> int:
-        stmt = (select(func.max(Placement.position)))
+        stmt = select(func.max(Placement.position))
         return self.session.scalar(stmt)
 
     def get_number_of_depository_placements(self) -> int:
-        stmt = (select(func.count()).select_from(Placement))
+        stmt = select(func.count()).select_from(Placement)
         return self.session.scalar(stmt)
 
     def get_number_books_in_depository(self) -> int:
-        stmt = (select(func.count()).select_from(Placement).where(Placement.status == PlacementStatus.OCCUPIED))
+        stmt = (
+            select(func.count())
+            .select_from(Placement)
+            .where(Placement.status == PlacementStatus.OCCUPIED)
+        )
         return self.session.scalar(stmt)
 
     def get_number_of_free_places(self) -> int:
-        stmt = (select(func.count()).select_from(Placement).where(Placement.status == PlacementStatus.FREE))
+        stmt = (
+            select(func.count())
+            .select_from(Placement)
+            .where(Placement.status == PlacementStatus.FREE)
+        )
         return self.session.scalar(stmt)
 
     def find_free_place(self, number: int) -> list[int]:
-        stmt = (select(Placement.id)
-                .where(Placement.status == PlacementStatus.FREE)
-                .with_for_update()
-                .limit(number))
+        stmt = (
+            select(Placement.id)
+            .where(Placement.status == PlacementStatus.FREE)
+            .with_for_update()
+            .limit(number)
+        )
         return list(self.session.scalars(stmt).all())
 
     def change_place_status(self, place_id: int, status: PlacementStatus) -> Placement:
@@ -55,15 +72,15 @@ class BookRepository:
         )
         return self.session.scalar(stmt)
 
-    def change_places_status(self, place_ids: list[int], status: PlacementStatus) -> list[Placement]:
+    def change_places_status(
+        self, place_ids: list[int], status: PlacementStatus
+    ) -> list[Placement]:
         stmt = (
-            update(Placement)
-            .where(Placement.id.in_(place_ids))
-            .values(status=status)
+            update(Placement).where(Placement.id.in_(place_ids)).values(status=status)
         )
         return list(self.session.scalars(stmt).all())
 
-    #Author
+    # Author
     def find_author(self, author: dict) -> Author | None:
         stmt = (
             select(Author)
@@ -86,7 +103,9 @@ class BookRepository:
         )
         return self.session.scalar(stmt)
 
-    def find_author_by_id(self, author_id: int, by_update: bool = False) -> Author | None:
+    def find_author_by_id(
+        self, author_id: int, by_update: bool = False
+    ) -> Author | None:
         stmt = (
             select(Author)
             .where((Author.id == author_id))
@@ -94,9 +113,9 @@ class BookRepository:
                 selectinload(Author.books).options(
                     selectinload(Book.authors).options(noload(Author.books)),
                     selectinload(Book.book_copies).options(
-                                                noload(BookCopy.customer),
-                                                       noload(BookCopy.book),
-                                                       noload(BookCopy.placement),
+                        noload(BookCopy.customer),
+                        noload(BookCopy.book),
+                        noload(BookCopy.placement),
                     ),
                 ),
                 with_loader_criteria(BookCopy, BookCopy.status == BookStatus.AVAILABLE),
@@ -107,21 +126,13 @@ class BookRepository:
         return self.session.scalar(stmt)
 
     def find_authors_without_book(self, for_update: bool = False) -> list[int]:
-        stmt = (
-            select(Author.id)
-            .outerjoin(Author.books)
-            .filter(Author.books == None)
-        )
+        stmt = select(Author.id).outerjoin(Author.books).filter(Author.books == None)
         if for_update:
             stmt = stmt.with_for_update()
         return list(self.session.scalars(stmt).all())
 
     def create_author(self, new_author: dict) -> Author:
-        stmt = (
-            insert(Author)
-            .values(new_author)
-            .returning(Author)
-        )
+        stmt = insert(Author).values(new_author).returning(Author)
         author = self.session.scalar(stmt)
         return author
 
@@ -135,35 +146,31 @@ class BookRepository:
         return self.session.scalar(stmt)
 
     def delete_author(self, author: Author) -> Author:
-        return self.delete_author_by_id(author.id)  #type: ignore
+        return self.delete_author_by_id(author.id)  # type: ignore
 
     def delete_author_by_id(self, author_id: int) -> Author:
-        stmt = (
-            delete(Author)
-            .where(Author.id == author_id)
-            .returning(Author)
-        )
+        stmt = delete(Author).where(Author.id == author_id).returning(Author)
         return self.session.scalar(stmt)
 
     def delete_authors_by_ids(self, author_ids: list[int]) -> list[Author]:
-        stmt = (
-            delete(Author)
-            .where(Author.id.in_(author_ids))
-            .returning(Author)
-        )
+        stmt = delete(Author).where(Author.id.in_(author_ids)).returning(Author)
         return list(self.session.scalars(stmt).all())
 
-    #Book
+    # Book
     def find_book_by_id(self, book_id: int, for_update: bool = False) -> Book | None:
         stmt = (
             select(Book)
             .where((Book.book_id == book_id))
-            .options(selectinload(Book.authors).options(noload(Author.books)),
-                     joinedload(Book.book_copies).options(noload(BookCopy.book),
-                                                          joinedload(BookCopy.placement),
-                                                          joinedload(BookCopy.customer)
-                                                          .options(noload(Customer.borrowed_books)))
-                     )
+            .options(
+                selectinload(Book.authors).options(noload(Author.books)),
+                joinedload(Book.book_copies).options(
+                    noload(BookCopy.book),
+                    joinedload(BookCopy.placement),
+                    joinedload(BookCopy.customer).options(
+                        noload(Customer.borrowed_books)
+                    ),
+                ),
+            )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Book, BookCopy))
@@ -173,7 +180,16 @@ class BookRepository:
         stmt = (
             select(Book)
             .where((Book.isbn == isbn))
-            .options(selectinload(Book.authors), selectinload(Book.book_copies))
+            .options(
+                selectinload(Book.authors).options(noload(Author.books)),
+                selectinload(Book.book_copies).options(
+                    noload(BookCopy.book),
+                    joinedload(BookCopy.placement),
+                    joinedload(BookCopy.customer).options(
+                        noload(Customer.borrowed_books)
+                    ),
+                ),
+            )
         )
         return self.session.scalars(stmt).one_or_none()
 
@@ -182,41 +198,27 @@ class BookRepository:
             select(Book)
             .outerjoin(Book.book_copies)
             .where(Book.book_copies == None)
+            .options(noload(Book.authors))
         )
         if for_update:
             stmt = stmt.with_for_update()
         return list(self.session.scalars(stmt).all())
 
     def create_book(self, book: dict) -> Book:
-        stmt = (
-            insert(Book)
-            .values(book)
-            .returning(Book)
-        )
+        stmt = insert(Book).values(book).returning(Book)
         return self.session.scalar(stmt)
 
     def delete_books(self, book_ids: list[int]) -> list[Book]:
-        stmt = (
-            delete(Book)
-            .where(Book.book_id.in_(book_ids))
-            .returning(Book)
-        )
+        stmt = delete(Book).where(Book.book_id.in_(book_ids)).returning(Book)
         return list(self.session.scalars(stmt).all())
 
     def delete_book_by_id(self, book_id: int) -> Book:
-        stmt = (
-            delete(Book)
-            .where(Book.book_id == book_id)
-            .returning(Book)
-        )
+        stmt = delete(Book).where(Book.book_id == book_id).returning(Book)
         return self.session.scalar(stmt)
 
-    #Book-Author relation
+    # Book-Author relation
     def find_books_by_author_id(self, author_id: int) -> list[int]:
-        stmt = (
-            select(BookAuthor.book_id)
-            .where(BookAuthor.author_id == author_id)
-        )
+        stmt = select(BookAuthor.book_id).where(BookAuthor.author_id == author_id)
         return list(self.session.scalars(stmt).all())
 
     def create_author_book_rel(self, book_id: int, author_id: int) -> BookAuthor:
@@ -227,13 +229,15 @@ class BookRepository:
         )
         return self.session.scalar(stmt)
 
-    #BookCopies
+    # BookCopies
     def find_book_copy(self, copy_id: int, for_update: bool = False) -> BookCopy | None:
         stmt = (
             select(BookCopy)
             .where((BookCopy.copy_id == copy_id))
-            .options(joinedload(BookCopy.book).options(joinedload(Book.authors)),
-                     selectinload(BookCopy.customer))
+            .options(
+                joinedload(BookCopy.book).options(joinedload(Book.authors)),
+                selectinload(BookCopy.customer),
+            )
         )
         if for_update:
             stmt = stmt.with_for_update()
@@ -243,17 +247,23 @@ class BookRepository:
         stmt = (
             select(BookCopy)
             .where(BookCopy.copy_id.in_(ids))
-            .options(joinedload(BookCopy.book).options(joinedload(BookCopy.authors)),
-                     selectinload(BookCopy.customer))
+            .options(
+                joinedload(BookCopy.book).options(joinedload(BookCopy.authors)),
+                selectinload(BookCopy.customer),
+            )
         )
         return list(self.session.scalars(stmt).all())
 
-    def find_book_copies_by_book_id(self, book_id: int, for_update: bool = False) -> list[BookCopy]:
+    def find_book_copies_by_book_id(
+        self, book_id: int, for_update: bool = False
+    ) -> list[BookCopy]:
         stmt = (
             select(BookCopy)
             .where(BookCopy.book_id == book_id)
-            .options(joinedload(BookCopy.book).options(joinedload(Book.authors)),
-                     selectinload(BookCopy.customer))
+            .options(
+                joinedload(BookCopy.book).options(joinedload(Book.authors)),
+                selectinload(BookCopy.customer),
+            )
         )
         if for_update:
             stmt = stmt.with_for_update()
@@ -263,126 +273,131 @@ class BookRepository:
         stmt = (
             select(BookCopy)
             .where(BookCopy.status == status)
-            .options(joinedload(BookCopy.book).options(joinedload(Book.authors)),
-                     selectinload(BookCopy.customer))
+            .options(
+                joinedload(BookCopy.book).options(joinedload(Book.authors)),
+                selectinload(BookCopy.customer),
+            )
         )
         return list(self.session.scalars(stmt).all())
 
-    def find_book_copies_for_statement(self, statement: BookStatement) -> list[BookCopy]:
+    def find_book_copies_for_statement(
+        self, statement: BookStatement
+    ) -> list[BookCopy]:
         stmt = (
             select(BookCopy)
             .where(BookCopy.statement == statement)
-            .options(selectinload(BookCopy.customer),
-                     selectinload(BookCopy.book),
-                     selectinload(BookCopy.placement))
+            .options(
+                selectinload(BookCopy.customer),
+                selectinload(BookCopy.book),
+                selectinload(BookCopy.placement),
+            )
         )
         return list(self.session.scalars(stmt).all())
 
     def create_book_copy(self, book_copy: dict) -> BookCopy:
-        stmt = (
-            insert(BookCopy)
-            .values(book_copy)
-            .returning(BookCopy)
-        )
+        stmt = insert(BookCopy).values(book_copy).returning(BookCopy)
         return self.session.scalar(stmt)
 
     def create_book_copies(self, book_copies: list[dict]) -> list[BookCopy]:
-        stmt = (
-            insert(BookCopy)
-            .values(book_copies)
-            .returning(BookCopy.copy_id)
-        )
+        stmt = insert(BookCopy).values(book_copies).returning(BookCopy.copy_id)
         ids = list(self.session.scalars(stmt).all())
         return self.find_book_copies_by_ids(ids)
 
     def update_book_copy(self, copy_id: int, book_copy: dict) -> BookCopy:
-        stmt = (
-            update(BookCopy)
-            .where(BookCopy.copy_id == copy_id)
-            .values(book_copy)
-        )
+        stmt = update(BookCopy).where(BookCopy.copy_id == copy_id).values(book_copy)
         self.session.execute(stmt)
         return self.find_book_copy(copy_id)
 
     def delete_book_copy(self, copy_id: int) -> BookCopy | None:
-        stmt = (
-            delete(BookCopy)
-            .where(BookCopy.copy_id == copy_id)
-            .returning(BookCopy)
-        )
+        stmt = delete(BookCopy).where(BookCopy.copy_id == copy_id).returning(BookCopy)
         return self.session.scalar(stmt)
 
     def delete_book_copies_by_ids(self, ids: list[int]) -> list[BookCopy]:
-        stmt = (
-            delete(BookCopy)
-            .where(BookCopy.copy_id.in_(ids))
-            .returning(BookCopy)
-        )
+        stmt = delete(BookCopy).where(BookCopy.copy_id.in_(ids)).returning(BookCopy)
         return list(self.session.scalars(stmt).all())
 
-    #Customer
-    def find_customer_by_id(self, customer_id: int, for_update: bool = False) -> Customer | None:
+    # Customer
+    def find_customer_by_id(
+        self, customer_id: int, for_update: bool = False
+    ) -> Customer | None:
         stmt = (
             select(Customer)
             .where(Customer.customer_id == customer_id)
-            .options(joinedload(Customer.borrowed_books)
-                     .options(joinedload(BookCopy.book)
-                              .options(joinedload(Book.authors)))
-                    )
+            .options(
+                joinedload(Customer.borrowed_books).options(
+                    joinedload(BookCopy.book)
+                    .options(noload(Book.book_copies))
+                    .options(joinedload(Book.authors).options(noload(Book.authors)))
+                )
+            )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Customer, BookCopy))
         return self.session.scalars(stmt).one_or_none()
 
-    def find_customer_by_email(self, email: str, for_update: bool = False) -> Customer | None:
+    def find_customer_by_email(
+        self, email: str, for_update: bool = False
+    ) -> Customer | None:
         stmt = (
             select(Customer)
             .where(Customer.email == email)
-            .options(joinedload(Customer.borrowed_books)
-                     .options(joinedload(BookCopy.book)
-                              .options(joinedload(Book.authors)))
-                    )
+            .options(
+                joinedload(Customer.borrowed_books).options(
+                    joinedload(BookCopy.book)
+                    .options(noload(Book.book_copies))
+                    .options(joinedload(Book.authors).options(noload(Book.authors)))
+                )
+            )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Customer, BookCopy))
         return self.session.scalars(stmt).one_or_none()
 
-    def find_customer_by_phone(self, phone: str, for_update: bool = False) -> Customer | None:
+    def find_customer_by_phone(
+        self, phone: str, for_update: bool = False
+    ) -> Customer | None:
         stmt = (
             select(Customer)
             .where(Customer.phone == phone)
-            .options(joinedload(Customer.borrowed_books)
-                     .options(joinedload(BookCopy.book)
-                              .options(joinedload(Book.authors)))
-                    )
+            .options(
+                joinedload(Customer.borrowed_books).options(
+                    joinedload(BookCopy.book)
+                    .options(noload(Book.book_copies))
+                    .options(joinedload(Book.authors).options(noload(Book.authors)))
+                )
+            )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Customer, BookCopy))
         return self.session.scalars(stmt).one_or_none()
 
-    def find_customer_by_fullname(self, fullname: dict, for_update: bool = False) -> Customer | None:
-        stmt=(
+    def find_customer_by_fullname(
+        self, fullname: dict, for_update: bool = False
+    ) -> Customer | None:
+        stmt = (
             select(Customer)
-            .where((Customer.first_name == fullname['first_name'])
-                   & (Customer.last_name == fullname['last_name'])
-                   & (Customer.middle_name == fullname['middle_name']))
-            .options(joinedload(Customer.borrowed_books)
-                     .options(joinedload(BookCopy.book)
-                              .options(joinedload(Book.authors)))
-                     )
+            .where(
+                (Customer.first_name == fullname["first_name"])
+                & (Customer.last_name == fullname["last_name"])
+                & (Customer.middle_name == fullname["middle_name"])
+            )
+            .options(
+                joinedload(Customer.borrowed_books).options(
+                    joinedload(BookCopy.book).options(
+                        noload(Book.book_copies),
+                        joinedload(Book.authors).options(noload(Author.books)),
+                    )
+                )
+            )
         )
         if for_update:
             stmt = stmt.with_for_update(of=(Customer, BookCopy))
         return self.session.scalars(stmt).one_or_none()
-
 
     def create_customer(self, new_customer: dict) -> Customer:
-        stmt = (
-            insert(Customer)
-            .values(new_customer)
-            .returning(Customer)
-        )
+        stmt = insert(Customer).values(new_customer).returning(Customer)
         return self.session.scalar(stmt)
+
     def update_customer(self, customer_id: int, new_customer: dict) -> Customer:
         stmt = (
             update(Customer)

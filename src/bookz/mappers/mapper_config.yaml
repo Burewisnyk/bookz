@@ -58,6 +58,7 @@ BOOK_COPY:
               dto: !class FullNameDTO
               orm_fields: [first_name, last_name, middle_name]
 
+
 CUSTOMER:
   dto: !class CustomerDTO
   nested_transform:

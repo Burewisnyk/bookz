@@ -4,6 +4,7 @@ import colorlog
 import yaml
 from pathlib import Path
 
+
 def setup_logging():
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
     config_file = BASE_DIR / "config" / "logger.yaml"
@@ -16,6 +17,7 @@ def setup_logging():
         print(f"Error: Logging configuration file not found at {config_file}")
     except Exception as e:
         print(f"Error initializing logger: {e}")
+
 
 setup_logging()
 

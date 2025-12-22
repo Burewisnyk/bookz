@@ -9,15 +9,18 @@ from bookz.logger import app_logger
 
 load_dotenv()
 
-DATABASE_URL = (f"postgresql+psycopg2://{os.getenv('db_user')}:{os.getenv('db_password')}"
-                f"@{os.getenv('db_url')}:{os.getenv('db_port')}/{os.getenv('db_name')}"
-                f"?client_encoding=utf8")
+DATABASE_URL = (
+    f"postgresql+psycopg2://{os.getenv('db_user')}:{os.getenv('db_password')}"
+    f"@{os.getenv('db_url')}:{os.getenv('db_port')}/{os.getenv('db_name')}"
+    f"?client_encoding=utf8"
+)
 app_logger.debug(f"DATABASE_URL={DATABASE_URL}")
 
 # Define Base at the top level
 Base = declarative_base()
 engine = None
 SessionLocal = None
+
 
 def start_db():
     app_logger.debug(f"Calling start_db function")
@@ -30,6 +33,7 @@ def start_db():
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
+
 def reset_db():
     app_logger.debug(f"Calling reset_db function")
     global engine
@@ -41,6 +45,7 @@ def reset_db():
     create_database(engine.url)
     Base.metadata.create_all(bind=engine)
 
+
 def is_database_exists() -> bool:
     # Check using the database URL directly
     app_logger.debug(f"Calling is_database_exists function")
@@ -50,13 +55,14 @@ def is_database_exists() -> bool:
 def get_session():
     """Provides a transactional scope around a series of operations."""
     global SessionLocal
-    app_logger.debug(f'Type of session: {type(SessionLocal)}')
+    app_logger.debug(f"Type of session: {type(SessionLocal)}")
     session = SessionLocal()
-    app_logger.debug(f'Type of session: {type(session)}')
+    app_logger.debug(f"Type of session: {type(session)}")
     try:
         yield session
     finally:
         session.close()
+
 
 def close_db():
     app_logger.debug(f"Calling close_db function")
